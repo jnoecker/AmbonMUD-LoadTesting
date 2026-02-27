@@ -1,0 +1,26 @@
+{
+  "name": "ambon-mud-load-testing-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18",
+    "react-dom": "^18",
+    "recharts": "^2",
+    "@uiw/react-codemirror": "^4",
+    "@codemirror/lang-yaml": "^6",
+    "js-yaml": "^4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4",
+    "vite": "^5",
+    "typescript": "^5",
+    "@types/react": "^18",
+    "@types/react-dom": "^18"
+  }
+}

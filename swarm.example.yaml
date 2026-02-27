@@ -1,0 +1,77 @@
+target:
+  host: localhost
+  telnetPort: 4000
+  webPort: 8080
+
+dashboard:
+  port: 3001
+
+pools:
+  - id: wanderers
+    transport: telnet           # telnet | websocket
+    behavior: wanderer          # idler | wanderer | fighter | chatter
+    count: 10
+    rampUpSeconds: 30
+    accounts:
+      mode: auto-register       # auto-register | credentials-file
+      namePrefix: bot_wand_
+      password: botpass123
+      race: HUMAN               # HUMAN | ELF | DWARF | HALFLING
+      class: WARRIOR            # WARRIOR | MAGE | CLERIC | ROGUE
+
+  - id: fighters
+    transport: websocket
+    behavior: fighter
+    count: 5
+    rampUpSeconds: 60
+    accounts:
+      mode: auto-register
+      namePrefix: bot_fight_
+      password: botpass123
+      race: DWARF
+      class: WARRIOR
+
+  - id: chatters
+    transport: telnet
+    behavior: chatter
+    count: 3
+    rampUpSeconds: 15
+    accounts:
+      mode: auto-register
+      namePrefix: bot_chat_
+      password: botpass123
+      race: ELF
+      class: MAGE
+
+  - id: idlers
+    transport: websocket
+    behavior: idler
+    count: 5
+    rampUpSeconds: 10
+    accounts:
+      mode: auto-register
+      namePrefix: bot_idle_
+      password: botpass123
+      race: HALFLING
+      class: ROGUE
+
+behaviorConfig:
+  idler:
+    pingIntervalMs: 30000
+  wanderer:
+    moveIntervalMs: 3000
+  fighter:
+    fleeAtHpPercent: 20
+    regenWaitSeconds: 10
+    preferCasting: true
+  chatter:
+    messageIntervalMs: 15000
+    channels:
+      - gossip
+      - say
+    messages:
+      - "Testing the system!"
+      - "Just a bot wandering around."
+      - "The mists of Ambon call to me."
+      - "Have you seen the archivist?"
+      - "A beautiful day in the realm."
