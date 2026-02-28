@@ -15,31 +15,56 @@ const DIRECTION_COMMANDS: Record<string, string> = {
   northeast: 'ne', northwest: 'nw', southeast: 'se', southwest: 'sw',
 };
 
+const OPPOSITE: Record<string, string> = {
+  north: 'south', south: 'north',
+  east: 'west',   west: 'east',
+  up: 'down',     down: 'up',
+  northeast: 'southwest', southwest: 'northeast',
+  northwest: 'southeast', southeast: 'northwest',
+};
+
+/** How many room IDs to remember when preferring unvisited exits. */
+const VISITED_CAP = 20;
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 /**
- * Wanderer: navigates randomly by picking exits from Room.Info GMCP.
+ * Wanderer: navigates the labyrinth by:
+ *  1. Preferring exits whose destination rooms have not been recently visited
+ *  2. Avoiding immediate backtracking (not reversing the last direction taken)
+ *  3. Falling back gracefully when the above constraints can't all be satisfied
  */
 export class WandererBehavior {
-  private exits: string[] = [];
+  /** Full exits map from the most recent Room.Info: direction → dest room ID */
+  private exits: Record<string, string> = {};
+  /** Direction of the last successful move, used to avoid immediate reversal */
+  private lastDir: string | null = null;
+  /** Ring buffer of recently visited room IDs */
+  private visited: string[] = [];
 
   constructor(private cfg: WandererBehaviorConfig) {}
 
   async run(bot: Bot, signal: AbortSignal): Promise<void> {
-    // Listen for Room.Info to update our exit list
-    const roomHandler = (_pkg: string, data: unknown) => {
-      const pkg = _pkg;
+    const roomHandler = (pkg: string, data: unknown) => {
       if (pkg === 'Room.Info') {
-        const info = data as { exits?: Record<string, string> };
-        this.exits = Object.keys(info.exits ?? {});
+        const info = data as { id?: string; exits?: Record<string, string> };
+        this.exits = info.exits ?? {};
+        if (info.id) {
+          this.visited.push(info.id);
+          if (this.visited.length > VISITED_CAP) this.visited.shift();
+        }
       }
     };
     bot.on('gmcp', roomHandler);
 
     try {
       while (!signal.aborted) {
-        if (this.exits.length > 0) {
-          const dir = this.exits[Math.floor(Math.random() * this.exits.length)];
-          const cmd = DIRECTION_COMMANDS[dir] ?? dir;
-          bot.sendText(`${cmd}\r\n`);
+        const dir = this.pickDirection();
+        if (dir) {
+          this.lastDir = dir;
+          bot.sendText(`${DIRECTION_COMMANDS[dir] ?? dir}\r\n`);
         }
         await sleep(this.cfg.moveIntervalMs, signal);
       }
@@ -48,5 +73,25 @@ export class WandererBehavior {
     } finally {
       bot.off('gmcp', roomHandler);
     }
+  }
+
+  private pickDirection(): string | null {
+    const dirs = Object.keys(this.exits);
+    if (dirs.length === 0) return null;
+
+    const backDir = this.lastDir ? OPPOSITE[this.lastDir] : null;
+    // The last N destinations we've been to — avoid going back to them.
+    const recentDests = new Set(this.visited.slice(-10));
+
+    // Tier 1: not recently visited AND not doubling back
+    let cands = dirs.filter(d => d !== backDir && !recentDests.has(this.exits[d]));
+    if (cands.length > 0) return pick(cands);
+
+    // Tier 2: allow revisiting a known room, but still no immediate backtrack
+    cands = dirs.filter(d => d !== backDir);
+    if (cands.length > 0) return pick(cands);
+
+    // Tier 3: dead end — only exit is back the way we came; allow it
+    return pick(dirs);
   }
 }

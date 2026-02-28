@@ -15,18 +15,39 @@ const DIRECTION_COMMANDS: Record<string, string> = {
   northeast: 'ne', northwest: 'nw', southeast: 'se', southwest: 'sw',
 };
 
+const OPPOSITE: Record<string, string> = {
+  north: 'south', south: 'north',
+  east: 'west',   west: 'east',
+  up: 'down',     down: 'up',
+  northeast: 'southwest', southwest: 'northeast',
+  northwest: 'southeast', southeast: 'northwest',
+};
+
+const VISITED_CAP = 20;
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 interface Mob { id: string; name: string; hp: number; maxHp: number; }
 interface Skill { id: string; name: string; cooldownRemainingMs: number; targetType: string; }
 interface Vitals { hp: number; maxHp: number; inCombat: boolean; }
 
 /**
- * Fighter: attacks mobs, flees at low HP, casts spells when available.
+ * Fighter: attacks mobs in the current room, flees at low HP, casts spells
+ * when available. When the room is clear it wanders the labyrinth using the
+ * same anti-backtrack / prefer-unvisited logic as WandererBehavior.
  */
 export class FighterBehavior {
   private vitals: Vitals = { hp: 100, maxHp: 100, inCombat: false };
   private mobs: Mob[] = [];
   private skills: Skill[] = [];
-  private exits: string[] = [];
+  /** Full exits map from the most recent Room.Info: direction → dest room ID */
+  private exits: Record<string, string> = {};
+  /** Direction of the last move, used to avoid immediate reversal */
+  private lastDir: string | null = null;
+  /** Ring buffer of recently visited room IDs */
+  private visited: string[] = [];
 
   constructor(private cfg: FighterBehaviorConfig) {}
 
@@ -52,8 +73,12 @@ export class FighterBehavior {
       } else if (pkg === 'Char.Skills') {
         this.skills = (data as Skill[]) ?? [];
       } else if (pkg === 'Room.Info') {
-        const info = data as { exits?: Record<string, string> };
-        this.exits = Object.keys(info.exits ?? {});
+        const info = data as { id?: string; exits?: Record<string, string> };
+        this.exits = info.exits ?? {};
+        if (info.id) {
+          this.visited.push(info.id);
+          if (this.visited.length > VISITED_CAP) this.visited.shift();
+        }
       }
     };
 
@@ -109,12 +134,36 @@ export class FighterBehavior {
       return;
     }
 
-    // No mobs — wander
-    if (this.exits.length > 0 && !this.vitals.inCombat) {
-      const dir = this.exits[Math.floor(Math.random() * this.exits.length)];
-      const cmd = DIRECTION_COMMANDS[dir] ?? dir;
-      bot.sendText(`${cmd}\r\n`);
+    // Room is clear — wander the labyrinth
+    if (!this.vitals.inCombat) {
+      const dir = this.pickDirection();
+      if (dir) {
+        this.lastDir = dir;
+        bot.sendText(`${DIRECTION_COMMANDS[dir] ?? dir}\r\n`);
+      }
     }
+  }
+
+  /**
+   * Picks the next movement direction using a three-tier preference:
+   *  1. Exit leads to a room not recently visited AND is not a reversal
+   *  2. Exit is not a reversal (allow revisit)
+   *  3. Dead end — allow backtracking
+   */
+  private pickDirection(): string | null {
+    const dirs = Object.keys(this.exits);
+    if (dirs.length === 0) return null;
+
+    const backDir = this.lastDir ? OPPOSITE[this.lastDir] : null;
+    const recentDests = new Set(this.visited.slice(-10));
+
+    let cands = dirs.filter(d => d !== backDir && !recentDests.has(this.exits[d]));
+    if (cands.length > 0) return pick(cands);
+
+    cands = dirs.filter(d => d !== backDir);
+    if (cands.length > 0) return pick(cands);
+
+    return pick(dirs);
   }
 
   /**
