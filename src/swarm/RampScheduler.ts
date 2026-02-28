@@ -6,6 +6,7 @@ export class RampScheduler {
   private timer: ReturnType<typeof setInterval> | null = null;
   private targetCount: number;
   private rampUpSeconds: number;
+  private draining = false;
 
   constructor(
     targetCount: number,
@@ -21,7 +22,9 @@ export class RampScheduler {
     if (this.timer || this.targetCount === 0) return;
 
     if (this.rampUpSeconds <= 0) {
-      void this.drainImmediately();
+      if (!this.draining) {
+        void this.drainImmediately();
+      }
       return;
     }
 
@@ -53,10 +56,10 @@ export class RampScheduler {
       return;
     }
 
-    if (this.timer) {
-      this.stop();
-      this.start();
-    }
+    // Always restart so the scheduler picks up the new target and interval,
+    // even if it was previously stopped because it had reached an older target.
+    this.stop();
+    this.start();
   }
 
   get target(): number {
@@ -70,14 +73,19 @@ export class RampScheduler {
   }
 
   private async drainImmediately(): Promise<void> {
-    while (this.getCurrentCount() < this.targetCount) {
-      try {
-        await this.addOne();
-      } catch (err) {
-        console.error('[RampScheduler] addOne error:', err);
-        // Don't break — keep ramping remaining bots even if one fails
-        continue;
+    this.draining = true;
+    try {
+      while (this.getCurrentCount() < this.targetCount) {
+        try {
+          await this.addOne();
+        } catch (err) {
+          console.error('[RampScheduler] addOne error:', err);
+          // Don't break — keep ramping remaining bots even if one fails
+          continue;
+        }
       }
+    } finally {
+      this.draining = false;
     }
   }
 }

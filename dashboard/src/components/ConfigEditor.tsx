@@ -22,6 +22,7 @@ export function ConfigEditor({
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
+  const [errorLabel, setErrorLabel] = useState<'load' | 'save'>('load');
 
   useEffect(() => {
     fetch('/api/config')
@@ -31,6 +32,7 @@ export function ConfigEditor({
         setLoading(false);
       })
       .catch((e: unknown) => {
+        setErrorLabel('load');
         setError(String(e));
         setLoading(false);
       });
@@ -53,6 +55,7 @@ export function ConfigEditor({
     }
 
     setSaved(false);
+    setErrorLabel('save');
     setError(saveFeedback.error ?? 'Config save failed');
     return undefined;
   }, [saveFeedback]);
@@ -114,7 +117,7 @@ export function ConfigEditor({
 
       {error && (
         <div style={{ color: 'var(--color-error)', marginBottom: 'var(--space-3)', fontSize: 12 }}>
-          Error loading config: {error}
+          {errorLabel === 'save' ? 'Save failed: ' : 'Error loading config: '}{error}
         </div>
       )}
 

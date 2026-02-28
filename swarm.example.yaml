@@ -2,59 +2,53 @@ target:
   host: localhost
   telnetPort: 4000
   webPort: 8080
-
 dashboard:
   port: 3001
-
 pools:
   - id: wanderers
-    transport: telnet           # telnet | websocket
-    behavior: wanderer          # idler | wanderer | fighter | chatter
-    count: 10
+    transport: telnet
+    behavior: wanderer
+    count: 0
     rampUpSeconds: 30
     accounts:
-      mode: auto-register       # auto-register | credentials-file
+      mode: auto-register
       namePrefix: bot_wand_
       password: botpass123
-      race: HUMAN               # HUMAN | ELF | DWARF | HALFLING
-      class: WARRIOR            # WARRIOR | MAGE | CLERIC | ROGUE
-
+      race: HUMAN
+      class: SWARM
   - id: fighters
     transport: websocket
     behavior: fighter
-    count: 5
+    count: 0
     rampUpSeconds: 60
     accounts:
       mode: auto-register
       namePrefix: bot_fight_
       password: botpass123
       race: DWARF
-      class: WARRIOR
-
+      class: SWARM
   - id: chatters
     transport: telnet
     behavior: chatter
-    count: 3
+    count: 10
     rampUpSeconds: 15
     accounts:
       mode: auto-register
       namePrefix: bot_chat_
       password: botpass123
       race: ELF
-      class: MAGE
-
+      class: SWARM
   - id: idlers
     transport: websocket
     behavior: idler
-    count: 5
-    rampUpSeconds: 10
+    count: 2000
+    rampUpSeconds: 2000
     accounts:
       mode: auto-register
       namePrefix: bot_idle_
       password: botpass123
       race: HALFLING
-      class: ROGUE
-
+      class: SWARM
 behaviorConfig:
   idler:
     pingIntervalMs: 30000
@@ -70,8 +64,8 @@ behaviorConfig:
       - gossip
       - say
     messages:
-      - "Testing the system!"
-      - "Just a bot wandering around."
-      - "The mists of Ambon call to me."
-      - "Have you seen the archivist?"
-      - "A beautiful day in the realm."
+      - Testing the system!
+      - Just a bot wandering around.
+      - The mists of Ambon call to me.
+      - Have you seen the archivist?
+      - A beautiful day in the realm.

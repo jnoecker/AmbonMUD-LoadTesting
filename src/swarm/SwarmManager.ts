@@ -169,16 +169,18 @@ export class SwarmManager {
     if (!ps) return;
 
     const targetCount = Math.max(0, Math.floor(newCount));
-    const current = ps.bots.size;
     ps.pool = { ...ps.pool, count: targetCount };
-    ps.scheduler?.updateTarget(targetCount, ps.pool.rampUpSeconds);
 
-    if (targetCount > current) {
-      // Add bots
-      for (let i = current; i < targetCount; i++) {
+    if (targetCount > ps.bots.size) {
+      // Stop the scheduler so it doesn't race with the direct add loop below.
+      ps.scheduler?.stop();
+      // Use ps.bots.size in the condition (not a captured snapshot of `current`)
+      // so in-flight scheduler adds that already bumped ps.bots.size are counted.
+      while (ps.bots.size < targetCount) {
         await this.addBot(ps);
       }
-    } else if (targetCount < current) {
+    } else if (targetCount < ps.bots.size) {
+      ps.scheduler?.updateTarget(targetCount, ps.pool.rampUpSeconds);
       // Remove bots (remove newest first)
       const toRemove = [...ps.bots.values()].slice(targetCount);
       for (const bot of toRemove) {

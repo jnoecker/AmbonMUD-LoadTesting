@@ -1,7 +1,7 @@
 export type Transport = 'telnet' | 'websocket';
 export type BehaviorName = 'idler' | 'wanderer' | 'fighter' | 'chatter';
 export type Race = 'HUMAN' | 'ELF' | 'DWARF' | 'HALFLING';
-export type CharClass = 'WARRIOR' | 'MAGE' | 'CLERIC' | 'ROGUE';
+export type CharClass = 'WARRIOR' | 'MAGE' | 'CLERIC' | 'ROGUE' | 'SWARM';
 
 export interface AutoRegisterAccounts {
   mode: 'auto-register';

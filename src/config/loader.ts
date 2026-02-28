@@ -181,7 +181,7 @@ function normalizeAccounts(input: unknown, poolIndex: number): AccountsConfig {
       namePrefix: nonEmptyString(accounts.namePrefix, `pools[${poolIndex}].accounts.namePrefix`),
       password: nonEmptyString(accounts.password, `pools[${poolIndex}].accounts.password`),
       race: enumValue(accounts.race, ['HUMAN', 'ELF', 'DWARF', 'HALFLING'], `pools[${poolIndex}].accounts.race`),
-      class: enumValue(accounts.class, ['WARRIOR', 'MAGE', 'CLERIC', 'ROGUE'], `pools[${poolIndex}].accounts.class`),
+      class: enumValue(accounts.class, ['WARRIOR', 'MAGE', 'CLERIC', 'ROGUE', 'SWARM'], `pools[${poolIndex}].accounts.class`),
     };
   }
 
