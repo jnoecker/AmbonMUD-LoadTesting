@@ -4,6 +4,7 @@ import type { Bot, BotConfig } from '../bot/Bot.ts';
 import { LoginFsm } from '../bot/LoginFsm.ts';
 import { createBehavior } from '../bot/behaviors/index.ts';
 import { RampScheduler } from './RampScheduler.ts';
+import { Semaphore } from './Semaphore.ts';
 import { MetricsStore } from '../metrics/MetricsStore.ts';
 import { loadCredentialsFile } from '../config/loader.ts';
 import type {
@@ -29,14 +30,18 @@ export class SwarmManager {
   private config: SwarmConfig;
   private metrics: MetricsStore;
   private rampTimer: ReturnType<typeof setInterval> | null = null;
+  private loginSemaphore: Semaphore;
 
   constructor(config: SwarmConfig, metrics: MetricsStore) {
     this.config = config;
     this.metrics = metrics;
+    this.loginSemaphore = new Semaphore(config.maxConcurrentLogins);
   }
 
   updateConfig(config: SwarmConfig): void {
     this.config = config;
+    // Recreate the semaphore with the new capacity (safe — only called while idle).
+    this.loginSemaphore = new Semaphore(config.maxConcurrentLogins);
   }
 
   get state(): SwarmState { return this.metrics.state; }
@@ -164,11 +169,20 @@ export class SwarmManager {
     }
   }
 
+  getConfig(): SwarmConfig { return this.config; }
+
   async scale(poolId: string, newCount: number): Promise<void> {
+    const targetCount = Math.max(0, Math.floor(newCount));
+
+    // When idle, just update the configured count so the next start() uses it.
+    if (this.metrics.state === 'idle') {
+      const poolConfig = this.config.pools.find(p => p.id === poolId);
+      if (poolConfig) poolConfig.count = targetCount;
+      return;
+    }
+
     const ps = this.pools.get(poolId);
     if (!ps) return;
-
-    const targetCount = Math.max(0, Math.floor(newCount));
     ps.pool = { ...ps.pool, count: targetCount };
 
     if (targetCount > ps.bots.size) {
@@ -250,9 +264,11 @@ export class SwarmManager {
     ps.bots.set(id, bot);
 
     try {
-      await bot.connect();
-      const fsm = new LoginFsm(bot, { name, password, isNew, race, class: charClass });
-      await fsm.run();
+      await this.loginSemaphore.run(async () => {
+        await bot.connect();
+        const fsm = new LoginFsm(bot, { name, password, isNew, race, class: charClass });
+        await fsm.run();
+      });
 
       if (!ps.bots.has(id)) {
         await bot.disconnect().catch(() => {});

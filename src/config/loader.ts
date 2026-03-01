@@ -21,6 +21,7 @@ const DEFAULT_CONFIG: SwarmConfig = {
   dashboard: {
     port: 3001,
   },
+  maxConcurrentLogins: 3,
   pools: [],
   behaviorConfig: {
     idler: { pingIntervalMs: 30000 },
@@ -83,6 +84,10 @@ export function normalizeConfig(input: unknown): SwarmConfig {
     dashboard: {
       port: portValue(dashboard.port ?? DEFAULT_CONFIG.dashboard.port, 'dashboard.port'),
     },
+    maxConcurrentLogins: positiveInteger(
+      root.maxConcurrentLogins ?? DEFAULT_CONFIG.maxConcurrentLogins,
+      'maxConcurrentLogins',
+    ),
     pools,
     behaviorConfig: {
       idler: {
@@ -243,6 +248,12 @@ function nonNegativeInteger(value: unknown, label: string): number {
   if (!Number.isInteger(num)) {
     throw new Error(`${label} must be an integer`);
   }
+  return num;
+}
+
+function positiveInteger(value: unknown, label: string): number {
+  const num = nonNegativeInteger(value, label);
+  if (num < 1) throw new Error(`${label} must be at least 1`);
   return num;
 }
 

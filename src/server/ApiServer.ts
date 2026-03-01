@@ -51,6 +51,10 @@ export class ApiServer {
     }
   }
 
+  setCurrentConfig(config: SwarmConfig): void {
+    this.currentConfig = config;
+  }
+
   get fetch(): (req: Request) => Response | Promise<Response> {
     return this.app.fetch.bind(this.app);
   }

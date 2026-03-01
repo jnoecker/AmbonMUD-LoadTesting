@@ -4,11 +4,12 @@ target:
   webPort: 8080
 dashboard:
   port: 3001
+maxConcurrentLogins: 3
 pools:
   - id: wanderers
     transport: telnet
     behavior: wanderer
-    count: 20
+    count: 30
     rampUpSeconds: 200
     accounts:
       mode: auto-register
@@ -19,7 +20,7 @@ pools:
   - id: fighters
     transport: websocket
     behavior: fighter
-    count: 20
+    count: 30
     rampUpSeconds: 50
     accounts:
       mode: auto-register
@@ -30,7 +31,7 @@ pools:
   - id: chatters
     transport: telnet
     behavior: chatter
-    count: 20
+    count: 30
     rampUpSeconds: 50
     accounts:
       mode: auto-register
@@ -41,7 +42,7 @@ pools:
   - id: idlers
     transport: websocket
     behavior: idler
-    count: 10
+    count: 30
     rampUpSeconds: 50
     accounts:
       mode: auto-register

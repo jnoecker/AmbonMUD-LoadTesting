@@ -67,6 +67,8 @@ export interface BehaviorConfig {
 export interface SwarmConfig {
   target: TargetConfig;
   dashboard: DashboardConfig;
+  /** Max bots that may be in the connect+login phase simultaneously. Prevents JVM thread exhaustion. */
+  maxConcurrentLogins: number;
   pools: PoolConfig[];
   behaviorConfig: BehaviorConfig;
 }

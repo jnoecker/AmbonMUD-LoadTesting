@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { loadConfig } from './config/loader.ts';
+import { loadConfig, saveConfig } from './config/loader.ts';
 import { MetricsStore } from './metrics/MetricsStore.ts';
 import { SwarmManager } from './swarm/SwarmManager.ts';
 import { DashboardBroadcaster } from './server/DashboardBroadcaster.ts';
@@ -65,6 +65,9 @@ Bun.serve({
         // Handle swarm control messages from dashboard
         switch (msg.type) {
           case 'START':
+            // Persist any slider-adjusted pool counts before starting.
+            saveConfig(configPath, swarm.getConfig());
+            apiServer.setCurrentConfig(swarm.getConfig());
             swarm.start().catch(console.error);
             break;
           case 'STOP':

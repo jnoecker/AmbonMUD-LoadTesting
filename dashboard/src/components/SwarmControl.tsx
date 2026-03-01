@@ -87,7 +87,6 @@ export function SwarmControl({
                 min={0}
                 max={Math.max(50, (counts[pool.id] ?? pool.count) + 20)}
                 value={counts[pool.id] ?? pool.count}
-                disabled={isIdle}
                 onChange={(e) => {
                   const val = Number(e.target.value);
                   setCounts(prev => ({ ...prev, [pool.id]: val }));
