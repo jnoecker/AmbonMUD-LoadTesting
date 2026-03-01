@@ -145,7 +145,7 @@ export default function App(): React.ReactElement {
               onScale={handleScale}
             />
             <LatencyPanel metrics={metrics} />
-            <RampChart data={rampHistory} />
+            <RampChart data={rampHistory} pools={pools} />
           </>
         )}
 

@@ -2,10 +2,11 @@ import React from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
-import type { RampPoint } from '../types.ts';
+import type { RampPoint, PoolSnapshot } from '../types.ts';
 
 interface RampChartProps {
   data: RampPoint[];
+  pools: PoolSnapshot[];
 }
 
 function formatTime(ts: number): string {
@@ -13,7 +14,22 @@ function formatTime(ts: number): string {
   return `${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 }
 
-export function RampChart({ data }: RampChartProps): React.ReactElement {
+/** Best-case bot count for all pools at `elapsedMs` ms after ramp start. */
+function bestCaseAt(pools: PoolSnapshot[], elapsedMs: number): number {
+  return pools.reduce((sum, p) => {
+    if (p.rampUpSeconds <= 0) return sum + p.count;
+    const intervalMs = Math.max(100, (p.rampUpSeconds * 1000) / Math.max(1, p.count));
+    return sum + Math.min(p.count, Math.floor(elapsedMs / intervalMs));
+  }, 0);
+}
+
+export function RampChart({ data, pools }: RampChartProps): React.ReactElement {
+  const startTs = data[0]?.ts ?? 0;
+  const chartData = data.map(point => ({
+    ...point,
+    ramp: bestCaseAt(pools, point.ts - startTs),
+  }));
+
   return (
     <div className="panel">
       <div className="panel-title">Ramp Chart</div>
@@ -24,7 +40,7 @@ export function RampChart({ data }: RampChartProps): React.ReactElement {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
+            <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgb(151 166 204 / 20%)" />
               <XAxis
                 dataKey="ts"
@@ -56,6 +72,15 @@ export function RampChart({ data }: RampChartProps): React.ReactElement {
                 strokeDasharray="5 4"
                 dot={false}
                 name="Target"
+              />
+              <Line
+                type="monotone"
+                dataKey="ramp"
+                stroke="#7ec8b0"
+                strokeWidth={1.5}
+                strokeDasharray="3 5"
+                dot={false}
+                name="Best-case ramp"
               />
               <Line
                 type="monotone"

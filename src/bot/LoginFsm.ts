@@ -46,7 +46,7 @@ export class LoginFsm {
 
       // Timeout after 60s
       const timer = setTimeout(() => {
-        this.reject(new Error(`Login timeout for bot ${this.creds.name}`));
+        this.reject(new Error(`Login timeout for bot ${this.creds.name} (stuck in ${this.state})`));
       }, 60_000);
 
       const cleanup = () => {

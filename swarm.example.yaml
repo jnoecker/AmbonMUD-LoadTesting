@@ -8,8 +8,8 @@ pools:
   - id: wanderers
     transport: telnet
     behavior: wanderer
-    count: 0
-    rampUpSeconds: 30
+    count: 20
+    rampUpSeconds: 200
     accounts:
       mode: auto-register
       namePrefix: bot_wand_
@@ -19,8 +19,8 @@ pools:
   - id: fighters
     transport: websocket
     behavior: fighter
-    count: 0
-    rampUpSeconds: 60
+    count: 20
+    rampUpSeconds: 50
     accounts:
       mode: auto-register
       namePrefix: bot_fight_
@@ -30,8 +30,8 @@ pools:
   - id: chatters
     transport: telnet
     behavior: chatter
-    count: 10
-    rampUpSeconds: 15
+    count: 20
+    rampUpSeconds: 50
     accounts:
       mode: auto-register
       namePrefix: bot_chat_
@@ -41,8 +41,8 @@ pools:
   - id: idlers
     transport: websocket
     behavior: idler
-    count: 2000
-    rampUpSeconds: 2000
+    count: 10
+    rampUpSeconds: 50
     accounts:
       mode: auto-register
       namePrefix: bot_idle_
