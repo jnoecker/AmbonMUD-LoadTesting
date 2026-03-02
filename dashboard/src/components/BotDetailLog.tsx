@@ -12,10 +12,11 @@ function formatTs(ts: number): string {
 }
 
 export function BotDetailLog({ botId, entries }: BotDetailLogProps): React.ReactElement {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [entries]);
 
   if (!botId) {
@@ -34,7 +35,7 @@ export function BotDetailLog({ botId, entries }: BotDetailLogProps): React.React
       <div className="panel-title" style={{ marginBottom: 'var(--space-2)' }}>
         Bot Log — <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85em' }}>{botId}</span>
       </div>
-      <div className="bot-log">
+      <div className="bot-log" ref={logRef}>
         {entries.length === 0 && (
           <div className="log-entry">
             <span className="log-ts">—</span>
@@ -47,7 +48,6 @@ export function BotDetailLog({ botId, entries }: BotDetailLogProps): React.React
             <span className={`log-${e.dir}`}>{e.text}</span>
           </div>
         ))}
-        <div ref={bottomRef} />
       </div>
     </div>
   );

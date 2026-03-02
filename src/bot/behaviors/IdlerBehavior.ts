@@ -43,11 +43,10 @@ export class IdlerBehavior {
       };
       bot.on('gmcp', handler);
 
-      // Timeout ping after 10s — record the max value so slow servers show in metrics
+      // Timeout ping after 10s — don't record a sample; a missing response
+      // is not a latency value and would skew p95/p99.
       const t = setTimeout(() => {
         bot.off('gmcp', handler);
-        bot.updateLatency(10_000);
-        bot.emit('latency', 10_000);
         resolve();
       }, 10_000);
       signal.addEventListener('abort', () => { clearTimeout(t); bot.off('gmcp', handler); resolve(); }, { once: true });
