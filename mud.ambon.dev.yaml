@@ -1,0 +1,72 @@
+target:
+  host: mud.ambon.dev
+  telnetPort: 4000
+  webPort: 8080
+dashboard:
+  port: 3001
+maxConcurrentLogins: 3
+pools:
+  - id: wanderers
+    transport: telnet
+    behavior: wanderer
+    count: 30
+    rampUpSeconds: 200
+    accounts:
+      mode: auto-register
+      namePrefix: bot_wand_
+      password: botpass123
+      race: HUMAN
+      class: SWARM
+  - id: fighters
+    transport: websocket
+    behavior: fighter
+    count: 30
+    rampUpSeconds: 50
+    accounts:
+      mode: auto-register
+      namePrefix: bot_fight_
+      password: botpass123
+      race: DWARF
+      class: SWARM
+  - id: chatters
+    transport: telnet
+    behavior: chatter
+    count: 30
+    rampUpSeconds: 50
+    accounts:
+      mode: auto-register
+      namePrefix: bot_chat_
+      password: botpass123
+      race: ELF
+      class: SWARM
+  - id: idlers
+    transport: websocket
+    behavior: idler
+    count: 30
+    rampUpSeconds: 50
+    accounts:
+      mode: auto-register
+      namePrefix: bot_idle_
+      password: botpass123
+      race: HALFLING
+      class: SWARM
+behaviorConfig:
+  idler:
+    pingIntervalMs: 30000
+  wanderer:
+    moveIntervalMs: 3000
+  fighter:
+    fleeAtHpPercent: 20
+    regenWaitSeconds: 10
+    preferCasting: true
+  chatter:
+    messageIntervalMs: 15000
+    channels:
+      - gossip
+      - say
+    messages:
+      - Testing the system!
+      - Just a bot wandering around.
+      - The mists of Ambon call to me.
+      - Have you seen the archivist?
+      - A beautiful day in the realm.
