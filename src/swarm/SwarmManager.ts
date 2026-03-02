@@ -208,9 +208,12 @@ export class SwarmManager {
     }
   }
 
-  private async addBot(ps: PoolState): Promise<void> {
+  private async addBot(ps: PoolState, overrides?: {
+    index: number; name: string; password: string;
+    isNew: boolean; race?: string; charClass?: string;
+  }): Promise<void> {
     const { pool } = ps;
-    const index = ps.nextIndex++;
+    const index = overrides?.index ?? ps.nextIndex++;
     const id = `${pool.id}-${index}`;
 
     let name: string;
@@ -219,7 +222,9 @@ export class SwarmManager {
     let race: string | undefined;
     let charClass: string | undefined;
 
-    if (pool.accounts.mode === 'auto-register') {
+    if (overrides) {
+      ({ name, password, isNew, race, charClass } = overrides);
+    } else if (pool.accounts.mode === 'auto-register') {
       name = `${pool.accounts.namePrefix}${String(index).padStart(3, '0')}`;
       password = pool.accounts.password;
       isNew = true;
@@ -260,6 +265,8 @@ export class SwarmManager {
       });
     }
 
+    // Replace any previous entry at this slot (e.g. a prior error bot).
+    this.metrics.unregisterBot(id);
     this.metrics.registerBot(bot);
     ps.bots.set(id, bot);
 
@@ -292,6 +299,17 @@ export class SwarmManager {
     } catch (err) {
       console.error(`[SwarmManager] Bot ${id} failed:`, err);
       bot.setState('error', String(err));
+      await bot.disconnect().catch(() => {});
+
+      // Keep the error entry in ps.bots during the wait so the RampScheduler
+      // doesn't spawn a duplicate for this slot.
+      await new Promise<void>(resolve => setTimeout(resolve, 5_000));
+
+      // Only retry if the swarm is still running and this bot hasn't been
+      // replaced by stop() or scale() while we were waiting.
+      if (this.metrics.state === 'running' && ps.bots.get(id) === bot) {
+        void this.addBot(ps, { index, name, password, isNew: false, race, charClass });
+      }
     }
   }
 
