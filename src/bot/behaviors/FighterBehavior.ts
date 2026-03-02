@@ -83,6 +83,10 @@ export class FighterBehavior {
     };
 
     bot.on('gmcp', gmcpHandler);
+    // Bootstrap: the initial Room.Info/Room.Mobs were emitted before this
+    // behavior started. Re-request them so exits and mob list are populated
+    // before the first tick.
+    bot.sendText('look\r\n');
 
     try {
       while (!signal.aborted) {

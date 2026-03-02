@@ -58,6 +58,9 @@ export class WandererBehavior {
       }
     };
     bot.on('gmcp', roomHandler);
+    // Bootstrap: the initial Room.Info was emitted before this behavior started.
+    // Re-request it so we get exits before the first move attempt.
+    bot.sendText('look\r\n');
 
     try {
       while (!signal.aborted) {
